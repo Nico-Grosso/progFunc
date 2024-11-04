@@ -1,0 +1,7 @@
+foo = (x == False) || (True == y)
+
+func = (False == x) && (True == y)
+
+func2 = (x == x)
+
+funcIf = if (True == x) then 2 else 3

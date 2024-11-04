@@ -1,0 +1,3 @@
+foo = if c then True else e
+    
+bar = \x -> if True then True else x 

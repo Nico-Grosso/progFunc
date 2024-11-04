@@ -1,0 +1,7 @@
+foo = if True then 2 else 3
+
+func = if True then t else e
+
+bar = if False then x else y
+
+function = \x -> if (if True then True else False) then x else y
