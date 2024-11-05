@@ -1,0 +1,3 @@
+func = e:[] ++ es
+
+compleja =  x:[] ++ (y:[] ++ ys)

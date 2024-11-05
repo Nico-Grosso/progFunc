@@ -297,6 +297,11 @@ lintRedIfOr expr = evalIfOr expr
 --------------------------------------------------------------------------------
 -- Chequeo de lista vacía
 --------------------------------------------------------------------------------
+
+isEmptyList :: Lit -> Bool
+isEmptyList(LitNil) = True
+isEmptyList (_) = False
+
 -- Sugiere el uso de null para verificar si una lista es vacía
 -- Construye sugerencias de la forma (LintNull e r)
 
@@ -309,8 +314,48 @@ lintNull = undefined
 -- se aplica en casos de la forma (e:[] ++ es), reemplazando por (e:es)
 -- Construye sugerencias de la forma (LintAppend e r)
 
+evalAppend :: Expr -> (Expr, [LintSugg])
+evalAppend expr = case expr of
+  Var n -> (Var n, [])
+  Lit lit -> (Lit lit, [])
+  App expr1 expr2 ->
+    let (result1, sugg1) = evalAppend expr1
+        (result2, sugg2) = evalAppend expr2
+    in (App result1 result2, sugg1 ++ sugg2)
+  Lam nom expr1 ->
+    let (result1, sugg1) = evalAppend expr1
+    in (Lam nom result1, sugg1)
+  Case expr1 expr2 (nom1, nom2, expr3) ->
+    let (result1, sugg1) = evalAppend expr1
+        (result2, sugg2) = evalAppend expr2
+        (result3, sugg3) = evalAppend expr3
+    in (Case result1 result2 (nom1, nom2, result3), sugg3 ++ sugg2 ++ sugg1)
+  If cond expr1 expr2 ->
+    let (resultCond, suggCond) = evalAppend cond
+        (result1, sugg1) = evalAppend expr1
+        (result2, sugg2) = evalAppend expr2
+    in (If resultCond result1 result2, suggCond ++ sugg1 ++ sugg2)
+  Infix op expr1 expr2 ->
+    let (result1, sugg1) = evalAppend expr1
+        (result2, sugg2) = evalAppend expr2
+    in case op of
+      Append -> case result1 of
+        Infix Cons subExpr1 subExpr2 ->
+          case subExpr2 of
+            Lit lit2 ->
+              if isEmptyList lit2 then
+                let exprSugg = LintAppend (Infix op result1 result2) (Infix Cons subExpr1 result2)
+                in (Infix Cons subExpr1 result2, sugg1 ++ sugg2 ++ exprSugg : [])
+              else
+                (Infix op result1 result2, sugg1 ++ sugg2)
+            otherwise -> (Infix op result1 result2, sugg1 ++ sugg2)
+        otherwise ->
+          (Infix op result1 result2, sugg1 ++ sugg2)
+      otherwise -> 
+        (Infix op result1 result2, sugg1 ++ sugg2)
+
 lintAppend :: Linting Expr
-lintAppend = undefined
+lintAppend expr = evalAppend expr
 
 --------------------------------------------------------------------------------
 -- Composición
