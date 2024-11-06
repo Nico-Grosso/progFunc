@@ -361,7 +361,7 @@ lintAppend expr = evalAppend expr
 -- Composición
 --------------------------------------------------------------------------------
 -- se aplica en casos de la forma (f (g t)), reemplazando por (f . g) t
--- Construye sugerencias de la forma (LintComp e r)
+-- Construye sugerencias de la forma (LintComp e r) 
 
 evalComp :: Expr -> (Expr, [LintSugg])
 evalComp expr = case expr of
@@ -389,8 +389,20 @@ evalComp expr = case expr of
         (result2, sugg2) = evalComp expr2
     in case result1 of 
       Var nom -> case result2 of
+        App subExpr1 subExpr2 -> 
+          let result = App (Infix Comp result1 subExpr1) subExpr2
+              exprSugg = LintComp (App result1 result2) (result)
+          in (result, sugg1 ++ sugg2 ++ exprSugg : [])
+        otherwise -> (App result1 result2, sugg1 ++ sugg2)
+      Lam nom exprLam -> case result2 of
         App subExpr1 subExpr2 ->
-          
+          let result = App (Infix Comp result1 subExpr1) (subExpr2)
+              exprSugg = LintComp (App result1 result2) (result)
+          in (result, sugg1 ++ sugg2 ++ exprSugg : [])
+
+
+-- (f(g t)) -> App (Var "f") (App (Var "g") t)
+
 
 lintComp :: Linting Expr
 lintComp expr = evalComp expr
