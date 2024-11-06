@@ -363,8 +363,37 @@ lintAppend expr = evalAppend expr
 -- se aplica en casos de la forma (f (g t)), reemplazando por (f . g) t
 -- Construye sugerencias de la forma (LintComp e r)
 
+evalComp :: Expr -> (Expr, [LintSugg])
+evalComp expr = case expr of
+  Var n -> (Var n, [])
+  Lit lit -> (Lit lit, [])
+  Lam n expr1 ->
+    let (result1, sugg1) = evalComp expr1
+    in (Lam n result1, sugg1)
+  Case expr1 expr2 (nom1, nom2, expr3) ->
+    let (result1, sugg1) = evalComp expr1
+        (result2, sugg2) = evalComp expr2
+        (result3, sugg3) = evalComp expr3
+    in (Case result1 result2 (nom1, nom2, result3), sugg3 ++ sugg2 ++ sugg1)
+  If cond expr1 expr2 ->
+    let (resultCond, suggCond) = evalComp cond
+        (result1, sugg1) = evalComp expr1
+        (result2, sugg2) = evalComp expr2
+    in (If resultCond result1 result2, suggCond ++ sugg1 ++ sugg2)
+  Infix op expr1 expr2 ->
+    let (result1, sugg1) = evalComp expr1
+        (result2, sugg2) = evalComp expr2
+    in (Infix op result1 result2, sugg1 ++ sugg2)
+  App expr1 expr2 ->
+    let (result1, sugg1) = evalComp expr1
+        (result2, sugg2) = evalComp expr2
+    in case result1 of 
+      Var nom -> case result2 of
+        App subExpr1 subExpr2 ->
+          
+
 lintComp :: Linting Expr
-lintComp = undefined
+lintComp expr = evalComp expr
 
 
 --------------------------------------------------------------------------------
