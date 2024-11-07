@@ -399,10 +399,22 @@ evalComp expr = case expr of
           let result = App (Infix Comp result1 subExpr1) (subExpr2)
               exprSugg = LintComp (App result1 result2) (result)
           in (result, sugg1 ++ sugg2 ++ exprSugg : [])
-
+        otherwise -> (App result1 result2, sugg1 ++ sugg2)
+      Infix Comp exprInf1 exprInf2 -> case result2 of 
+        App subExpr1 subExpr2 ->
+          let result = App (Infix Comp result1 subExpr1) (subExpr2)
+              exprSugg = LintComp (App result1 result2) (result)
+          in (result, sugg1 ++ sugg2 ++ exprSugg : [])
+        otherwise -> (App result1 result2, sugg1 ++ sugg2) 
+      App exprApp1 exprApp2 -> case result2 of
+        App subExpr1 subExpr2 ->
+          let result = App (Infix Comp result1 subExpr1) (subExpr2)
+              exprSugg = LintComp (App result1 result2) (result)
+          in (result, sugg1 ++ sugg2 ++ exprSugg : [])
+        otherwise -> (App result1 result2, sugg1 ++ sugg2) 
+      otherwise -> (App result1 result2,  sugg1 ++ sugg2)
 
 -- (f(g t)) -> App (Var "f") (App (Var "g") t)
-
 
 lintComp :: Linting Expr
 lintComp expr = evalComp expr
