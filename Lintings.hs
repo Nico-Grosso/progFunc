@@ -16,6 +16,16 @@ freeVariables = undefined
 -- LINTINGS
 --------------------------------------------------------------------------------
 
+-- parseo del case
+-- case e1 of
+--     [] -> e2
+--     (n1 : n2) -> e3
+
+-- Arbol
+-- Case e1 e2 (n1, n2, e3)
+
+-- En MiniHaskell el case est´a restringido al pattern matching sobre la lista vacia []
+-- y la lista no vac´ıa de la forma (〈ident〉:〈ident〉)
 
 
 --------------------------------------------------------------------------------
@@ -67,7 +77,7 @@ evalConstant expr = case expr of
     let (result1, sugg1) = evalConstant expr1
         (result2, sugg2) = evalConstant expr2
         (result3, sugg3) = evalConstant expr3
-    in (Case result1 result2 (x, xs, result3), sugg3 ++ sugg2 ++ sugg1)
+    in (Case result1 result2 (x, xs, result3), sugg1 ++ sugg2 ++ sugg3)
   App expr1 expr2 ->
     let (result1, sugg1) = evalConstant expr1
         (result2, sugg2) = evalConstant expr2
@@ -186,7 +196,7 @@ evalIfCond expr = case expr of
     let (result1, sugg1) = evalIfCond expr1
         (result2, sugg2) = evalIfCond expr2
         (result3, sugg3) = evalIfCond expr3
-    in (Case result1 result2 (nom1, nom2, result3), sugg3 ++ sugg2 ++ sugg1)
+    in (Case result1 result2 (nom1, nom2, result3), sugg1 ++ sugg2 ++ sugg3)
   Infix op expr1 expr2 ->
     let (result1, sugg1) = evalIfCond expr1
         (result2, sugg2) = evalIfCond expr2
@@ -229,7 +239,7 @@ evalIfAnd expr = case expr of
     let (result1, sugg1) = evalIfAnd expr1
         (result2, sugg2) = evalIfAnd expr2
         (result3, sugg3) = evalIfAnd expr3
-    in (Case result1 result2 (nom1, nom2, result3), sugg3 ++ sugg2 ++ sugg1)
+    in (Case result1 result2 (nom1, nom2, result3), sugg1 ++ sugg2 ++ sugg3)
   Infix op expr1 expr2 ->
     let (result1, sugg1) = evalIfAnd expr1
         (result2, sugg2) = evalIfAnd expr2
@@ -269,7 +279,7 @@ evalIfOr expr = case expr of
     let (result1, sugg1) = evalIfOr expr1
         (result2, sugg2) = evalIfOr expr2
         (result3, sugg3) = evalIfOr expr3
-    in (Case result1 result2 (nom1, nom2, result3), sugg3 ++ sugg2 ++ sugg1)
+    in (Case result1 result2 (nom1, nom2, result3), sugg1 ++ sugg2 ++ sugg3)
   Infix op expr1 expr2 ->
     let (result1, sugg1) = evalIfOr expr1
         (result2, sugg2) = evalIfOr expr2
@@ -298,10 +308,12 @@ lintRedIfOr expr = evalIfOr expr
 -- Chequeo de lista vacía
 --------------------------------------------------------------------------------
 
+-- Función auxiliar que evalúa una Lit y se fija si es una lista vacía
 isEmptyList :: Lit -> Bool
 isEmptyList(LitNil) = True
 isEmptyList (_) = False
 
+--------------------------------------------------------------------------------
 -- Sugiere el uso de null para verificar si una lista es vacía
 -- Construye sugerencias de la forma (LintNull e r)
 
@@ -329,7 +341,7 @@ evalAppend expr = case expr of
     let (result1, sugg1) = evalAppend expr1
         (result2, sugg2) = evalAppend expr2
         (result3, sugg3) = evalAppend expr3
-    in (Case result1 result2 (nom1, nom2, result3), sugg3 ++ sugg2 ++ sugg1)
+    in (Case result1 result2 (nom1, nom2, result3), sugg1 ++ sugg2 ++ sugg3)
   If cond expr1 expr2 ->
     let (resultCond, suggCond) = evalAppend cond
         (result1, sugg1) = evalAppend expr1
@@ -374,7 +386,7 @@ evalComp expr = case expr of
     let (result1, sugg1) = evalComp expr1
         (result2, sugg2) = evalComp expr2
         (result3, sugg3) = evalComp expr3
-    in (Case result1 result2 (nom1, nom2, result3), sugg3 ++ sugg2 ++ sugg1)
+    in (Case result1 result2 (nom1, nom2, result3), sugg1 ++ sugg2 ++ sugg3)
   If cond expr1 expr2 ->
     let (resultCond, suggCond) = evalComp cond
         (result1, sugg1) = evalComp expr1
@@ -434,10 +446,50 @@ lintEta = undefined
 -- Eliminación de recursión con map
 --------------------------------------------------------------------------------
 
+evalMap :: Expr -> (Expr, [LintSugg])
+evalMap expr = case expr of
+  Var nom -> (Var nom, [])
+  Lit lit -> (Lit lit, [])
+  Infix op expr1 expr1 ->
+    let (result1, sugg1) = evalMap expr1
+        (result2, sugg2) = evalMap expr2
+    in (Infix op result1 result2, sugg1 ++ sugg2)
+  App expr1 expr2 ->
+    let (result1, sugg1) = evalMap expr1
+        (result2, sugg2) = evalMap expr2
+    in (App result1 result2, sugg1 ++ sugg2)
+  Case expr1 expr2 (nom1, nom2, expr3) ->
+    let (result1, sugg1) = evalMap expr1
+        (result2, sugg2) = evalMap expr2
+        (result3, sugg3) = evalMap expr3
+    in (Case result1 result2 (nom1, nom2, result3), sugg1 ++ sugg2 ++ sugg3)
+  If cond expr1 expr2 ->
+    let (result1, sugg1) = evalMap expr1
+        (result2, sugg2) = evalMap expr2
+        (resultCond, suggCond) = evalMap cond
+    in (If resultCond result1 result2, suggCond ++ sugg1 ++ sugg2)
+  Lam nom exprLam ->
+    let (resultLam, suggLam) = evalMap exprLam
+    in case resultLam of 
+      Case expr1 expr2 (nom1, nom2, expr3) -> case expr3 of
+        Infix op expr1 expr2 -> case op of
+          Cons ->
+        otherwise -> (Lam nom resultLam, suggLam)
+      otherwise -> (Lam nom resultLam, suggLam)
+
+-- parseo del case
+-- case e1 of
+--     [] -> e2
+--     (n1 : n2) -> e3
+
+-- Arbol
+-- Case e1 e2 (n1, n2, e3)
+
+
 -- Sustituye recursión sobre listas por `map`
 -- Construye sugerencias de la forma (LintMap f r)
 lintMap :: Linting FunDef
-lintMap = undefined
+lintMap expr = evalMap expr
 
 
 --------------------------------------------------------------------------------
