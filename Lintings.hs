@@ -407,7 +407,7 @@ evalNull expr = case expr of
                   case eResult1 of
                     App e1 e2 -> if (e1 == Var "length") then do
                       let expSugg = LintNull (Infix op (App e1 e2) (Lit l2)) (App (Var "null") e2)
-                      (App (Var "null") e1, expSugg : listSug1 ++ listSug2)
+                      (App (Var "null") e2, expSugg : listSug1 ++ listSug2)
                      else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
                     otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
                 else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
@@ -589,6 +589,9 @@ lintEta expr = do
 variableNoPerteneceALista :: [Name] -> Name -> Bool
 variableNoPerteneceALista listVar var = not $ elem var listVar  
 
+validMapFunction :: Expr -> Name -> Name -> Name -> Bool
+validMapFunction expr nomFun xs nomLam = variableNoPerteneceALista (freeVariables expr) nomFun && variableNoPerteneceALista (freeVariables expr) xs && variableNoPerteneceALista (freeVariables expr) nomLam
+
 evalMap :: FunDef -> (FunDef, [LintSugg])
 evalMap (FunDef nomFun expr) = case expr of
   Var nom -> (FunDef nomFun (Var nom), [])
@@ -603,12 +606,17 @@ evalMap (FunDef nomFun expr) = case expr of
         Cons -> case exprInf2 of
           App (Var nomFun) (Var xs) -> case exprInf1 of
             App exprApp (Var x) -> 
-              if (variableNoPerteneceALista (freeVariables exprApp) nomFun && variableNoPerteneceALista (freeVariables exprApp) xs && variableNoPerteneceALista (freeVariables exprApp) nomLam) then
+              if (validMapFunction exprApp nomFun xs nomLam) then
                 let result = FunDef nomFun (App (Var "map") (Lam x (App exprApp (Var x))))
                     exprSugg = [LintMap (FunDef nomFun (Lam nomLam exprLam)) result]
                 in (result, exprSugg)
               else (FunDef nomFun (Lam nomLam exprLam), [])
-            Infix subOp subExpr1 subExpr2
+            Infix subOp subExpr1 subExpr2 ->
+              if (validMapFunction exprInf1 nomFun xs nomLam) then
+                let result = FunDef nomFun (App (Var "map") (Lam x (Infix subOp subExpr1 subExpr2)))
+                    exprSugg = [LintMap (FunDef nomFun (Lam nomLam exprLam)) result]
+                in (result, exprSugg)
+              else (FunDef nomFun (Lam nomLam exprLam), [])
             otherwise -> (FunDef nomFun (Lam nomLam exprLam), [])
           otherwise -> (FunDef nomFun (Lam nomLam exprLam), [])
         otherwise -> (FunDef nomFun (Lam nomLam exprLam), [])
