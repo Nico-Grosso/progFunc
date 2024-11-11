@@ -8,25 +8,50 @@ import LintTypes
 -- AUXILIARES
 --------------------------------------------------------------------------------
 
+-- Función auxiliar que verifica si la variable que se pasa por parámetro pertenece a la lista también pasada por parámetro
+varInList :: Name -> [Name] -> Bool
+varInList nomb [] = False
+varInList nomb (x:xs) 
+  | nomb == x = True
+  | otherwise = varInList nomb xs
+
+-- Función auxiliar que compone la lista de variables libres sin repeticiones de una Expr
+freeVariablesUnique :: [Name] -> Expr -> [Name] -> [Name]
+freeVariablesUnique varsLig expr varsFree = case expr of
+  Var nomb -> if varInList nomb varsLig then varsFree 
+    else if varInList nomb varsFree then varsFree
+    else (nomb : varsFree)
+  Lit l -> varsFree
+  App e1 e2 -> do
+    let varsFree2 = freeVariablesUnique varsLig e2 varsFree
+    let varsFreeResult = freeVariablesUnique varsLig e1 varsFree2
+    varsFreeResult
+  Lam nom e1 -> let
+    varsLig2 = (nom : varsLig)
+    in freeVariablesUnique varsLig2 e1 varsFree
+  Case e1 e2 (nom1, nom2, e3) -> do
+    let varsLig2= (nom1 : nom2 : varsLig)
+    let varsFreeE1 = freeVariablesUnique varsLig2 e1 varsFree 
+    let varsFreeE2 = freeVariablesUnique varsLig2 e2 varsFreeE1 
+    let varsFree = freeVariablesUnique varsLig2 e3 varsFreeE2
+    varsFree
+  If e1 e2 e3 -> do 
+    let varsFreeE1 = freeVariablesUnique varsLig e1 varsFree
+    let varsFreeE2 = freeVariablesUnique varsLig e2 varsFreeE1
+    let varsFree = freeVariablesUnique varsLig e3 varsFreeE2
+    varsFree
+  Infix op e1 e2 -> do
+    let varsFreeE1 = freeVariablesUnique varsLig e1 varsFree
+    let varsFree = freeVariablesUnique varsLig e2 varsFreeE1
+    varsFree
+
 -- Computa la lista de variables libres de una expresión
 freeVariables :: Expr -> [Name]
-freeVariables = undefined
+freeVariables expr = freeVariablesUnique [] expr []
 
 --------------------------------------------------------------------------------
 -- LINTINGS
 --------------------------------------------------------------------------------
-
--- parseo del case
--- case e1 of
---     [] -> e2
---     (n1 : n2) -> e3
-
--- Arbol
--- Case e1 e2 (n1, n2, e3)
-
--- En MiniHaskell el case est´a restringido al pattern matching sobre la lista vacia []
--- y la lista no vac´ıa de la forma (〈ident〉:〈ident〉)
-
 
 --------------------------------------------------------------------------------
 -- Computación de constantes
@@ -313,12 +338,88 @@ isEmptyList :: Lit -> Bool
 isEmptyList(LitNil) = True
 isEmptyList (_) = False
 
+-- Función auxiliar que evalúa una Expr y se fija si contiene la función length
+isLength :: Expr -> Bool
+isLength(Var n) = (n=="length")
+isLength (_) = False
+
+-- Función auxiliar que evalúa una Lit y se fija si es el natural 0
+isZero :: Lit -> Bool
+isZero(LitInt z) = (z==0)
+isZero (_) = False
+
+-- Función auxiliar que evalúa una Expr y reemplaza chequeo de lista vacia con null
+evalNull :: Expr -> (Expr, [LintSugg])
+evalNull expr = case expr of
+  Var n -> (Var n, [])
+  Lit lit -> (Lit lit, [])
+  App e1 e2 -> do
+    let (eResult1, listSug1) = evalNull e1
+    let (eResult2, listSug2) = evalNull e2
+    (App eResult1 eResult2, listSug1 ++ listSug2)
+  Lam nom e1 -> do
+    let (result, listSug) = evalNull e1
+    (Lam nom result, listSug)
+  Case e1 e2 (nom1, nom2, e3) -> do
+    let (eResult1, listSug1) = evalNull e1
+    let (eResult2, listSug2) = evalNull e2
+    let (eResult3, listSug3) = evalNull e3
+    (Case eResult1 eResult2 (nom1, nom2, eResult3), listSug1 ++ listSug2 ++ listSug3)
+  If e1 e2 e3 -> do
+    let (eResult1, listSug1) = evalNull e1
+    let (eResult2, listSug2) = evalNull e2
+    let (eResult3, listSug3) = evalNull e3
+    (If eResult1 eResult2 eResult3, listSug1 ++ listSug2 ++ listSug3)
+  Infix op e1 e2 -> do
+    let (eResult1, listSug1)= evalNull e1
+    let (eResult2, listSug2)= evalNull e2
+    case op of
+      Eq -> case eResult1 of
+        Lit l1 -> if isEmptyList l1 then do
+            let expSugg = LintNull (Infix op (Lit l1) eResult2) (App (Var "null") eResult2)
+            (App (Var "null") eResult2, expSugg : listSug1 ++ listSug2)
+          else if isZero l1 then do
+            case eResult2 of
+              App e1 e2 -> if (e1 == Var "length") then do
+                  let expSugg = LintNull (Infix op (eResult1) (App e1 e2)) (App (Var "null") e2)
+                  (App (Var "null") e2, expSugg : listSug1 ++ listSug2)
+                 else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+              otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+          else do
+            case eResult2 of
+              Lit l2 -> if isEmptyList l2 then do
+                  let expSugg = LintNull (Infix op (eResult1) (Lit l2)) (App (Var "null") eResult1)
+                  (App (Var "null") eResult1, expSugg : listSug1 ++ listSug2)
+                else if isZero l2 then do
+                  case eResult1 of
+                    App e1 e2 -> if (e1 == Var "length") then do
+                        let expSugg = LintNull (Infix op (App e1 e2) (eResult2)) (App (Var "null") e2)
+                        (App (Var "null") e1, expSugg : listSug1 ++ listSug2)
+                      else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+                    otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+                else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+               --otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+        otherwise -> case eResult2 of
+              Lit l2 -> if isEmptyList l2 then do
+                  let expSugg = LintNull (Infix op (eResult1) (Lit l2)) (App (Var "null") eResult1)
+                  (App (Var "null") eResult1, expSugg : listSug1 ++ listSug2)
+                 else if isZero l2 then do
+                  case eResult1 of
+                    App e1 e2 -> if (e1 == Var "length") then do
+                      let expSugg = LintNull (Infix op (App e1 e2) (Lit l2)) (App (Var "null") e2)
+                      (App (Var "null") e1, expSugg : listSug1 ++ listSug2)
+                     else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+                    otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+                else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+              otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+      otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+
 --------------------------------------------------------------------------------
 -- Sugiere el uso de null para verificar si una lista es vacía
 -- Construye sugerencias de la forma (LintNull e r)
 
 lintNull :: Linting Expr
-lintNull = undefined
+lintNull expr = evalNull expr
 
 --------------------------------------------------------------------------------
 -- Eliminación de la concatenación
@@ -435,47 +536,84 @@ lintComp expr = evalComp expr
 --------------------------------------------------------------------------------
 -- Eta Redución
 --------------------------------------------------------------------------------
+
+-- Función auxiliar que evalúa una Expr y realiza chequeos para Eta-reducción
+evalEta :: Expr -> (Expr, [LintSugg])
+evalEta expr = case expr of
+  Var n -> (Var n, [])
+  Lit lit -> (Lit lit, [])
+  Case e1 e2 (nomb1, nomb2, e3) -> do
+    let (eResult1, sug1) = evalEta e1
+    let (eResult2, sug2) = evalEta e2
+    let (eResult3, sug3) = evalEta e3
+    (Case eResult1 eResult2 (nomb1, nomb2, eResult3), sug3 ++ sug2 ++ sug1)
+  Infix op e1 e2 -> do
+    let (eResult1, sug1) = evalEta e1
+    let (eResult2, sug2) = evalEta e2
+    (Infix op eResult1 eResult2, sug2 ++ sug1)
+  If e1 e2 e3-> do
+    let (eResult1, sug1)= evalEta e1
+    let (eResult2, sug2)= evalEta e2
+    let (eResult3, sug3)= evalEta e3
+    (If eResult1 eResult2 eResult3, sug3 ++ sug2 ++ sug1)
+  App e1 e2 -> do
+    let (eResult1, sug1) = evalEta e1
+    let (eResult2, sug2) = evalEta e2
+    (App eResult1 eResult2, sug2 ++ sug1)
+  Lam nomb e1 -> do
+    let (result, sug) = evalEta e1
+    case result of
+      App e2 e3 -> do
+        let fVars = freeVariables e2
+        if varInList nomb fVars then (Lam nomb result, sug)
+        else case e3 of
+          Var nomb2 -> if (nomb == nomb2) then do
+              let expSug = LintEta (Lam nomb result) (e2)
+              (e2, sug ++ expSug : [])
+            else (Lam nomb result, sug)
+          otherwise -> (Lam nomb result, sug)
+      otherwise -> (Lam nomb result, sug)
+
 -- se aplica en casos de la forma \x -> e x, reemplazando por e
 -- Construye sugerencias de la forma (LintEta e r)
 
 lintEta :: Linting Expr
-lintEta = undefined
-
+lintEta expr = do
+  let (result, listSug) = evalEta expr
+  (result, listSug)
 
 --------------------------------------------------------------------------------
 -- Eliminación de recursión con map
 --------------------------------------------------------------------------------
 
-evalMap :: Expr -> (Expr, [LintSugg])
-evalMap expr = case expr of
-  Var nom -> (Var nom, [])
-  Lit lit -> (Lit lit, [])
-  Infix op expr1 expr1 ->
-    let (result1, sugg1) = evalMap expr1
-        (result2, sugg2) = evalMap expr2
-    in (Infix op result1 result2, sugg1 ++ sugg2)
-  App expr1 expr2 ->
-    let (result1, sugg1) = evalMap expr1
-        (result2, sugg2) = evalMap expr2
-    in (App result1 result2, sugg1 ++ sugg2)
-  Case expr1 expr2 (nom1, nom2, expr3) ->
-    let (result1, sugg1) = evalMap expr1
-        (result2, sugg2) = evalMap expr2
-        (result3, sugg3) = evalMap expr3
-    in (Case result1 result2 (nom1, nom2, result3), sugg1 ++ sugg2 ++ sugg3)
-  If cond expr1 expr2 ->
-    let (result1, sugg1) = evalMap expr1
-        (result2, sugg2) = evalMap expr2
-        (resultCond, suggCond) = evalMap cond
-    in (If resultCond result1 result2, suggCond ++ sugg1 ++ sugg2)
-  Lam nom exprLam ->
-    let (resultLam, suggLam) = evalMap exprLam
-    in case resultLam of 
-      Case expr1 expr2 (nom1, nom2, expr3) -> case expr3 of
-        Infix op expr1 expr2 -> case op of
-          Cons ->
-        otherwise -> (Lam nom resultLam, suggLam)
-      otherwise -> (Lam nom resultLam, suggLam)
+variableNoPerteneceALista :: [Name] -> Name -> Bool
+variableNoPerteneceALista listVar var = not $ elem var listVar  
+
+evalMap :: FunDef -> (FunDef, [LintSugg])
+evalMap (FunDef nomFun expr) = case expr of
+  Var nom -> (FunDef nomFun (Var nom), [])
+  Lit lit -> (FunDef nomFun (Lit lit), [])
+  Infix op expr1 expr2 -> (FunDef nomFun (Infix op expr1 expr2), [])
+  App expr1 expr2 -> (FunDef nomFun (App expr1 expr2), [])
+  Case expr1 expr2 (nom1, nom2, expr3) -> (FunDef nomFun (Case expr1 expr2 (nom1, nom2, expr3)), [])
+  If cond expr1 expr2 -> (FunDef nomFun (If cond expr1 expr2), [])
+  Lam nomLam exprLam -> case exprLam of 
+    Case expr1 expr2 (x, xs, expr3) -> case expr3 of
+      Infix op exprInf1 exprInf2 -> case op of
+        Cons -> case exprInf2 of
+          App (Var nomFun) (Var xs) -> case exprInf1 of
+            App exprApp (Var x) -> 
+              if (variableNoPerteneceALista (freeVariables exprApp) nomFun && variableNoPerteneceALista (freeVariables exprApp) xs && variableNoPerteneceALista (freeVariables exprApp) nomLam) then
+                let result = FunDef nomFun (App (Var "map") (Lam x (App exprApp (Var x))))
+                    exprSugg = [LintMap (FunDef nomFun (Lam nomLam exprLam)) result]
+                in (result, exprSugg)
+              else (FunDef nomFun (Lam nomLam exprLam), [])
+            Infix subOp subExpr1 subExpr2
+            otherwise -> (FunDef nomFun (Lam nomLam exprLam), [])
+          otherwise -> (FunDef nomFun (Lam nomLam exprLam), [])
+        otherwise -> (FunDef nomFun (Lam nomLam exprLam), [])
+      otherwise -> (FunDef nomFun (Lam nomLam exprLam), [])
+    otherwise -> (FunDef nomFun (Lam nomLam exprLam), [])
 
 -- parseo del case
 -- case e1 of
@@ -489,7 +627,7 @@ evalMap expr = case expr of
 -- Sustituye recursión sobre listas por `map`
 -- Construye sugerencias de la forma (LintMap f r)
 lintMap :: Linting FunDef
-lintMap expr = evalMap expr
+lintMap fun = evalMap fun
 
 
 --------------------------------------------------------------------------------
