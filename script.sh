@@ -1,67 +1,88 @@
 #!/bin/bash
 
-./Linter -c ./ejemplos/caso01.mhs > ./ejemplos/misalida/caso01-lint.mhs
-./Linter -c ./ejemplos/caso02.mhs > ./ejemplos/misalida/caso02-lint.mhs
-./Linter -c ./ejemplos/caso03.mhs > ./ejemplos/misalida/caso03-lint.mhs
-./Linter -c ./ejemplos/caso04.mhs > ./ejemplos/misalida/caso04-lint.mhs
-./Linter -c ./ejemplos/caso05.mhs > ./ejemplos/misalida/caso05-lint.mhs
-./Linter -c ./ejemplos/caso06.mhs > ./ejemplos/misalida/caso06-lint.mhs
-./Linter -c ./ejemplos/caso07.mhs > ./ejemplos/misalida/caso07-lint.mhs
-./Linter -c ./ejemplos/caso08.mhs > ./ejemplos/misalida/caso08-lint.mhs
-./Linter -c ./ejemplos/caso09.mhs > ./ejemplos/misalida/caso09-lint.mhs
-./Linter -c ./ejemplos/caso10.mhs > ./ejemplos/misalida/caso10-lint.mhs
-./Linter -c ./ejemplos/caso11.mhs > ./ejemplos/misalida/caso11-lint.mhs
-./Linter -c ./ejemplos/caso12.mhs > ./ejemplos/misalida/caso12-lint.mhs
-./Linter -c ./ejemplos/caso13.mhs > ./ejemplos/misalida/caso13-lint.mhs
-./Linter -c ./ejemplos/caso14.mhs > ./ejemplos/misalida/caso14-lint.mhs
-./Linter -c ./ejemplos/caso15.mhs > ./ejemplos/misalida/caso15-lint.mhs
-./Linter -c ./ejemplos/caso16.mhs > ./ejemplos/misalida/caso16-lint.mhs
-./Linter -c ./ejemplos/caso17.mhs > ./ejemplos/misalida/caso17-lint.mhs
-./Linter -c ./ejemplos/caso18.mhs > ./ejemplos/misalida/caso18-lint.mhs
-./Linter -c ./ejemplos/caso19.mhs > ./ejemplos/misalida/caso19-lint.mhs
-./Linter -c ./ejemplos/caso20.mhs > ./ejemplos/misalida/caso20-lint.mhs
-./Linter -c ./ejemplos/caso21.mhs > ./ejemplos/misalida/caso21-lint.mhs
-./Linter -c ./ejemplos/caso22.mhs > ./ejemplos/misalida/caso22-lint.mhs
-./Linter -c ./ejemplos/caso23.mhs > ./ejemplos/misalida/caso23-lint.mhs
-./Linter -c ./ejemplos/caso24.mhs > ./ejemplos/misalida/caso24-lint.mhs
+./Linter -c ./casos/caso01.mhs > ./casos/misalida/caso01-lint.mhs
+./Linter -c ./casos/caso02.mhs > ./casos/misalida/caso02-lint.mhs
+./Linter -c ./casos/caso03.mhs > ./casos/misalida/caso03-lint.mhs
+./Linter -c ./casos/caso04.mhs > ./casos/misalida/caso04-lint.mhs
+./Linter -c ./casos/caso05.mhs > ./casos/misalida/caso05-lint.mhs
+./Linter -c ./casos/caso06.mhs > ./casos/misalida/caso06-lint.mhs
+./Linter -c ./casos/caso07.mhs > ./casos/misalida/caso07-lint.mhs
+./Linter -c ./casos/caso08.mhs > ./casos/misalida/caso08-lint.mhs
+./Linter -c ./casos/caso09.mhs > ./casos/misalida/caso09-lint.mhs
+./Linter -c ./casos/caso10.mhs > ./casos/misalida/caso10-lint.mhs
+./Linter -c ./casos/caso11.mhs > ./casos/misalida/caso11-lint.mhs
+./Linter -c ./casos/caso12.mhs > ./casos/misalida/caso12-lint.mhs
+./Linter -c ./casos/caso13.mhs > ./casos/misalida/caso13-lint.mhs
+./Linter -c ./casos/caso14.mhs > ./casos/misalida/caso14-lint.mhs
+./Linter -c ./casos/caso15.mhs > ./casos/misalida/caso15-lint.mhs
+./Linter -c ./casos/caso16.mhs > ./casos/misalida/caso16-lint.mhs
+./Linter -c ./casos/caso17.mhs > ./casos/misalida/caso17-lint.mhs
+./Linter -c ./casos/caso18.mhs > ./casos/misalida/caso18-lint.mhs
+./Linter -c ./casos/caso19.mhs > ./casos/misalida/caso19-lint.mhs
+./Linter -c ./casos/caso20.mhs > ./casos/misalida/caso20-lint.mhs
+./Linter -c ./casos/caso21.mhs > ./casos/misalida/caso21-lint.mhs
+./Linter -c ./casos/caso22.mhs > ./casos/misalida/caso22-lint.mhs
+./Linter -c ./casos/caso23.mhs > ./casos/misalida/caso23-lint.mhs
+./Linter -c ./casos/caso24.mhs > ./casos/misalida/caso24-lint.mhs
 
-./Linter -s ./ejemplos/caso01.mhs > ./ejemplos/misalida/caso01-sug
-./Linter -s ./ejemplos/caso02.mhs > ./ejemplos/misalida/caso02-sug
-./Linter -s ./ejemplos/caso03.mhs > ./ejemplos/misalida/caso03-sug
-./Linter -s ./ejemplos/caso04.mhs > ./ejemplos/misalida/caso04-sug
-./Linter -s ./ejemplos/caso05.mhs > ./ejemplos/misalida/caso05-sug
-./Linter -s ./ejemplos/caso06.mhs > ./ejemplos/misalida/caso06-sug
-./Linter -s ./ejemplos/caso07.mhs > ./ejemplos/misalida/caso07-sug
-./Linter -s ./ejemplos/caso08.mhs > ./ejemplos/misalida/caso08-sug
-./Linter -s ./ejemplos/caso09.mhs > ./ejemplos/misalida/caso09-sug
-./Linter -s ./ejemplos/caso10.mhs > ./ejemplos/misalida/caso10-sug
-./Linter -s ./ejemplos/caso11.mhs > ./ejemplos/misalida/caso11-sug
-./Linter -s ./ejemplos/caso12.mhs > ./ejemplos/misalida/caso12-sug
-./Linter -s ./ejemplos/caso13.mhs > ./ejemplos/misalida/caso13-sug
-./Linter -s ./ejemplos/caso14.mhs > ./ejemplos/misalida/caso14-sug
-./Linter -s ./ejemplos/caso15.mhs > ./ejemplos/misalida/caso15-sug
-./Linter -s ./ejemplos/caso16.mhs > ./ejemplos/misalida/caso16-sug
-./Linter -s ./ejemplos/caso17.mhs > ./ejemplos/misalida/caso17-sug
-./Linter -s ./ejemplos/caso18.mhs > ./ejemplos/misalida/caso18-sug
-./Linter -s ./ejemplos/caso19.mhs > ./ejemplos/misalida/caso19-sug
-./Linter -s ./ejemplos/caso20.mhs > ./ejemplos/misalida/caso20-sug
-./Linter -s ./ejemplos/caso21.mhs > ./ejemplos/misalida/caso21-sug
-./Linter -s ./ejemplos/caso22.mhs > ./ejemplos/misalida/caso22-sug
-./Linter -s ./ejemplos/caso23.mhs > ./ejemplos/misalida/caso23-sug
-./Linter -s ./ejemplos/caso24.mhs > ./ejemplos/misalida/caso24-sug
+./Linter -s ./casos/caso01.mhs > ./casos/misalida/caso01-sug
+./Linter -s ./casos/caso02.mhs > ./casos/misalida/caso02-sug
+./Linter -s ./casos/caso03.mhs > ./casos/misalida/caso03-sug
+./Linter -s ./casos/caso04.mhs > ./casos/misalida/caso04-sug
+./Linter -s ./casos/caso05.mhs > ./casos/misalida/caso05-sug
+./Linter -s ./casos/caso06.mhs > ./casos/misalida/caso06-sug
+./Linter -s ./casos/caso07.mhs > ./casos/misalida/caso07-sug
+./Linter -s ./casos/caso08.mhs > ./casos/misalida/caso08-sug
+./Linter -s ./casos/caso09.mhs > ./casos/misalida/caso09-sug
+./Linter -s ./casos/caso10.mhs > ./casos/misalida/caso10-sug
+./Linter -s ./casos/caso11.mhs > ./casos/misalida/caso11-sug
+./Linter -s ./casos/caso12.mhs > ./casos/misalida/caso12-sug
+./Linter -s ./casos/caso13.mhs > ./casos/misalida/caso13-sug
+./Linter -s ./casos/caso14.mhs > ./casos/misalida/caso14-sug
+./Linter -s ./casos/caso15.mhs > ./casos/misalida/caso15-sug
+./Linter -s ./casos/caso16.mhs > ./casos/misalida/caso16-sug
+./Linter -s ./casos/caso17.mhs > ./casos/misalida/caso17-sug
+./Linter -s ./casos/caso18.mhs > ./casos/misalida/caso18-sug
+./Linter -s ./casos/caso19.mhs > ./casos/misalida/caso19-sug
+./Linter -s ./casos/caso20.mhs > ./casos/misalida/caso20-sug
+./Linter -s ./casos/caso21.mhs > ./casos/misalida/caso21-sug
+./Linter -s ./casos/caso22.mhs > ./casos/misalida/caso22-sug
+./Linter -s ./casos/caso23.mhs > ./casos/misalida/caso23-sug
+./Linter -s ./casos/caso24.mhs > ./casos/misalida/caso24-sug
 
-# Para los archivos de lint
+# Variable para rastrear diferencias
+diferencias=0
+erroresSug=0
+erroresRes=0
+
+# Comparar archivos de lint
 for i in {01..24}
 do
   echo "Procesando archivo caso${i}-lint.mhs"
-  diff -w ./ejemplos/caso${i}-lint.mhs ./ejemplos/misalida/caso${i}-lint.mhs > ./ejemplos/diferencias_caso${i}-lint.txt
+  if ! diff -w ./casos/salidas/caso${i}-lint.mhs ./casos/misalida/caso${i}-lint.mhs > ./casos/diferencias_caso${i}-lint.txt; then
+    diferencias=1
+    erroresRes=$((erroresRes + 1))
+    echo "Diferencia encontrada en caso${i}-lint.mhs"
+  fi
 done
 
-# Para los archivos de sugerencias
+# Comparar archivos de sugerencias
 for i in {01..24}
 do
   echo "Procesando archivo caso${i}-sug"
-  diff -w ./ejemplos/caso${i}-sug ./ejemplos/misalida/caso${i}-sug > ./ejemplos/diferencias_caso${i}-sug.txt
+  if ! diff -w ./casos/salidas/caso${i}-sug ./casos/misalida/caso${i}-sug > ./casos/diferencias_caso${i}-sug.txt; then
+    diferencias=1
+    erroresSug=$((erroresSug + 1))
+    echo "Diferencia encontrada en caso${i}-sug"
+  fi
 done
 
+# Verificar si no hubo diferencias
+if [ $diferencias -eq 0 ]; then
+  echo "EXITO: No se encontraron diferencias en ningún archivo."
+else
+  echo "Se encontraron diferencias en algunos archivos."
+fi
 
+echo "ERRORES DE RESULTADO: $erroresRes"
+echo "ERRORES DE SUGERENCIAS: $erroresSug"

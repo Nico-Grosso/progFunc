@@ -93,6 +93,32 @@ evalOp Or lit1 lit2 =
       res2 = evalBool lit2
       res = res1 || res2
   in (LitBool res, True)
+-- evalOp Eq lit1 lit2 = 
+--   let res = (lit1 == lit2)
+--   in (LitBool res, True)
+-- -- Operador mayor que
+-- evalOp GTh lit1 lit2 = 
+--   let res1 = evalInt lit1
+--       res2 = evalInt lit2
+--   in (LitBool (res1 > res2), True)
+-- -- Operador menor que
+-- evalOp LTh lit1 lit2 = 
+--   let res1 = evalInt lit1
+--       res2 = evalInt lit2
+--   in (LitBool (res1 < res2), True)
+-- -- Operador Cons (para listas)
+-- evalOp Cons lit1 lit2 = 
+--   case lit2 of
+--     LitNil -> (lit1, True)
+--     _ -> (LitNil, False)
+-- -- Operador de composición (se puede definir según el contexto)
+-- evalOp Comp _ _ = (LitNil, False)
+-- -- Operador de append (depende del tipo de datos con el que estés trabajando)
+-- evalOp Append _ _ = (LitNil, False)
+
+-- Caso por defecto
+evalOp _ _ _ = (LitNil, False)
+
 
 evalConstant :: Expr -> (Expr, [LintSugg])
 evalConstant expr = case expr of
@@ -403,7 +429,7 @@ evalNull expr = case expr of
               Lit l2 -> if isEmptyList l2 then do
                   let expSugg = LintNull (Infix op (eResult1) (Lit l2)) (App (Var "null") eResult1)
                   (App (Var "null") eResult1, expSugg : listSug1 ++ listSug2)
-                 else if isZero l2 then do
+                else if isZero l2 then do
                   case eResult1 of
                     App e1 e2 -> if (e1 == Var "length") then do
                       let expSugg = LintNull (Infix op (App e1 e2) (Lit l2)) (App (Var "null") e2)
@@ -604,7 +630,7 @@ evalMap (FunDef nomFun expr) = case expr of
     Case expr1 expr2 (x, xs, expr3) -> case expr3 of
       Infix op exprInf1 exprInf2 -> case op of
         Cons -> case exprInf2 of
-          App (Var nomFun) (Var xs) -> case exprInf1 of
+          App (Var nomApp) (Var listApp) -> if (nomFun == nomApp && xs == listApp) then (case exprInf1 of
             App exprApp (Var x) -> 
               if (validMapFunction exprApp nomFun xs nomLam) then
                 let result = FunDef nomFun (App (Var "map") (Lam x (App exprApp (Var x))))
@@ -617,7 +643,8 @@ evalMap (FunDef nomFun expr) = case expr of
                     exprSugg = [LintMap (FunDef nomFun (Lam nomLam exprLam)) result]
                 in (result, exprSugg)
               else (FunDef nomFun (Lam nomLam exprLam), [])
-            otherwise -> (FunDef nomFun (Lam nomLam exprLam), [])
+            otherwise -> (FunDef nomFun (Lam nomLam exprLam), []))
+            else (FunDef nomFun (Lam nomLam exprLam), [])
           otherwise -> (FunDef nomFun (Lam nomLam exprLam), [])
         otherwise -> (FunDef nomFun (Lam nomLam exprLam), [])
       otherwise -> (FunDef nomFun (Lam nomLam exprLam), [])
