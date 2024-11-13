@@ -14,4 +14,4 @@ baz = not False
 
 qux = False
 
-quux = not True
+quux = False

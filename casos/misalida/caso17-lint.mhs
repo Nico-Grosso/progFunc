@@ -10,6 +10,4 @@ id = \x -> x
 
 len = flip lenXa 1
 
-incr = \xs -> case xs of 
-    [] -> []; 
-    (x : xs) -> (id . (id . id)) (1 + x) : incr xs
+incr = map (\x -> (id . (id . id)) (1 + x))

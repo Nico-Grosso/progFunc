@@ -202,25 +202,27 @@ evalChequeo e = case e of
     let (eResult1, listSug1)= evalChequeo e1
     let (eResult2, listSug2)= evalChequeo e2
     case op of
-      Eq -> case eResult1 of
-        Lit l1 -> if isTrue l1 then do
-            let expSugg = LintBool (Infix op (Lit l1) eResult2) (eResult2)
-            (eResult2, expSugg : listSug1 ++ listSug2)
-          else if isFalse l1 then do
+      Eq ->
+        case (eResult1, eResult2) of
+          (Lit l1, _) | isTrue l1 -> do
+            let expSugg = LintBool (Infix op (Lit l1) eResult2) eResult2
+            (eResult2, listSug1 ++ listSug2 ++ expSugg : [])
+          (_, Lit l2) | isTrue l2 -> do
+            let expSugg = LintBool (Infix op eResult1 (Lit l2)) eResult1
+            (eResult1, listSug1 ++ listSug2 ++ expSugg : [])
+          
+          (Lit l1, _) | isFalse l1 -> do
             let expSugg = LintBool (Infix op (Lit l1) eResult2) (App (Var "not") eResult2)
-            (App (Var "not") eResult2, expSugg : listSug1 ++ listSug2)
-          else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
-        otherwise -> case eResult2 of
-              Lit l2 -> if isTrue l2 then do
-                  let expSugg = LintBool (Infix op (eResult1) (Lit l2)) (eResult1)  
-                  (eResult1, expSugg : listSug1 ++ listSug2)
-                else if isFalse l2 then do
-                  let expSugg = LintBool (Infix op (eResult1) (Lit l2)) (App (Var "not") eResult1)
-                  (App (Var "not") eResult1, expSugg : listSug1 ++ listSug2)
-                else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
-              otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+            (App (Var "not") eResult2, listSug1 ++ listSug2 ++ expSugg : [])
+          (_, Lit l2) | isFalse l2 -> do
+            let expSugg = LintBool (Infix op eResult1 (Lit l2)) (App (Var "not") eResult1)
+            (App (Var "not") eResult1, listSug1 ++ listSug2 ++ expSugg : [])
+          
+          _ -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+          
       otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
 
+    
 --------------------------------------------------------------------------------
 -- Elimina chequeos de la forma e == True, True == e, e == False y False == e
 -- Construye sugerencias de la forma (LintBool e r)
@@ -616,7 +618,7 @@ variableNoPerteneceALista :: [Name] -> Name -> Bool
 variableNoPerteneceALista listVar var = not $ elem var listVar  
 
 validMapFunction :: Expr -> Name -> Name -> Name -> Bool
-validMapFunction expr nomFun xs nomLam = variableNoPerteneceALista (freeVariables expr) nomFun && variableNoPerteneceALista (freeVariables expr) xs && variableNoPerteneceALista (freeVariables expr) nomLam
+validMapFunction expr nomFun xs nomLam = (not $ varInList nomFun (freeVariables expr)) && (not $ varInList xs (freeVariables expr)) && (not $ varInList nomLam (freeVariables expr))
 
 evalMap :: FunDef -> (FunDef, [LintSugg])
 evalMap (FunDef nomFun expr) = case expr of
@@ -631,9 +633,9 @@ evalMap (FunDef nomFun expr) = case expr of
       Infix op exprInf1 exprInf2 -> case op of
         Cons -> case exprInf2 of
           App (Var nomApp) (Var listApp) -> if (nomFun == nomApp && xs == listApp) then (case exprInf1 of
-            App exprApp (Var x) -> 
-              if (validMapFunction exprApp nomFun xs nomLam) then
-                let result = FunDef nomFun (App (Var "map") (Lam x (App exprApp (Var x))))
+            App exprApp expectedX -> 
+              if (validMapFunction exprInf1 nomFun xs nomLam) then
+                let result = FunDef nomFun (App (Var "map") (Lam x (exprInf1)))
                     exprSugg = [LintMap (FunDef nomFun (Lam nomLam exprLam)) result]
                 in (result, exprSugg)
               else (FunDef nomFun (Lam nomLam exprLam), [])
