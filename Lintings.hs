@@ -366,11 +366,6 @@ isEmptyList :: Lit -> Bool
 isEmptyList(LitNil) = True
 isEmptyList (_) = False
 
--- Función auxiliar que evalúa una Expr y se fija si contiene la función length
-isLength :: Expr -> Bool
-isLength(Var n) = (n=="length")
-isLength (_) = False
-
 -- Función auxiliar que evalúa una Lit y se fija si es el natural 0
 isZero :: Lit -> Bool
 isZero(LitInt z) = (z==0)
@@ -402,44 +397,24 @@ evalNull expr = case expr of
     let (eResult1, listSug1)= evalNull e1
     let (eResult2, listSug2)= evalNull e2
     case op of
-      Eq -> case eResult1 of
-        Lit l1 -> if isEmptyList l1 then do
+      Eq ->
+        case (eResult1, eResult2) of
+          (Lit l1, _) | isEmptyList l1 -> do
             let expSugg = LintNull (Infix op (Lit l1) eResult2) (App (Var "null") eResult2)
             (App (Var "null") eResult2, expSugg : listSug1 ++ listSug2)
-          else if isZero l1 then do
-            case eResult2 of
-              App e1 e2 -> if (e1 == Var "length") then do
-                  let expSugg = LintNull (Infix op (eResult1) (App e1 e2)) (App (Var "null") e2)
-                  (App (Var "null") e2, expSugg : listSug1 ++ listSug2)
-                 else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
-              otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
-          else do
-            case eResult2 of
-              Lit l2 -> if isEmptyList l2 then do
-                  let expSugg = LintNull (Infix op (eResult1) (Lit l2)) (App (Var "null") eResult1)
-                  (App (Var "null") eResult1, expSugg : listSug1 ++ listSug2)
-                else if isZero l2 then do
-                  case eResult1 of
-                    App e1 e2 -> if (e1 == Var "length") then do
-                        let expSugg = LintNull (Infix op (App e1 e2) (eResult2)) (App (Var "null") e2)
-                        (App (Var "null") e1, expSugg : listSug1 ++ listSug2)
-                      else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
-                    otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
-                else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
-               --otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
-        otherwise -> case eResult2 of
-              Lit l2 -> if isEmptyList l2 then do
-                  let expSugg = LintNull (Infix op (eResult1) (Lit l2)) (App (Var "null") eResult1)
-                  (App (Var "null") eResult1, expSugg : listSug1 ++ listSug2)
-                else if isZero l2 then do
-                  case eResult1 of
-                    App e1 e2 -> if (e1 == Var "length") then do
-                      let expSugg = LintNull (Infix op (App e1 e2) (Lit l2)) (App (Var "null") e2)
-                      (App (Var "null") e2, expSugg : listSug1 ++ listSug2)
-                     else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
-                    otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
-                else (Infix op eResult1 eResult2, listSug1 ++ listSug2)
-              otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+          (_, Lit l2) | isEmptyList l2 -> do
+            let expSugg = LintNull (Infix op (eResult1) (Lit l2)) (App (Var "null") eResult1)
+            (App (Var "null") eResult1, expSugg : listSug1 ++ listSug2)
+
+          (App exp1 exp2, Lit l2) | (exp1 == Var "length") && (isZero l2) -> do
+            let expSugg = LintNull (Infix op (App exp1 exp2) (Lit l2)) (App (Var "null") exp2)
+            (App (Var "null") exp2, expSugg : listSug1 ++ listSug2)
+          (Lit l1, App exp1 exp2) | (exp1 == Var "length") && (isZero l1) -> do
+            let expSugg = LintNull (Infix op (Lit l1) (App exp1 exp2)) (App (Var "null") exp2)
+            (App (Var "null") exp2, expSugg : listSug1 ++ listSug2)
+
+          _ -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
+          
       otherwise -> (Infix op eResult1 eResult2, listSug1 ++ listSug2)
 
 --------------------------------------------------------------------------------
